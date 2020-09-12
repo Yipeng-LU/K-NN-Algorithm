@@ -1,0 +1,126 @@
+def l2_distance(sample1,sample2):
+    ans=0
+    for i in range(len(sample1)):
+        ans+=(sample1[i]-sample2[i])**2
+    return ans**0.5
+def l1_distance(sample1,sample2):
+    ans=0
+    for i in range(len(sample1)):
+        ans+=abs(sample1[i]-sample2[i])
+    return ans
+def l0_distance(sample1,sample2):
+    ans=0
+    for i in range(len(sample1)):
+        if sample1[i]!=sample2[i]:
+            ans+=1
+    return ans
+def cos_distance(sample1,sample2):
+    ans=0
+    for i in range(len(sample1)):
+        ans+=sample1[i]*sample2[i]
+    s1=0
+    s2=0
+    for i in range(len(sample1)):
+        s1+=sample1[i]**2
+        s2+=sample2[i]**2
+    ans/=(s1*s2)**0.5
+    return -ans
+
+#answer of question (b.i)
+import csv
+import matplotlib.pyplot as plt
+x_train=[]
+y_train=[]
+labels={'Iris-setosa':0,'Iris-versicolor':1,'Iris-virginica':2}
+with open('iris_train.csv') as csvfile:
+    datareader = csv.reader(csvfile)
+    for samp in datareader:
+        if '_' in samp[0]:
+            continue
+        sample=[]
+        for i in range(4):
+            sample.append(float(samp[i]))
+        x_train.append(sample)
+        y_train.append(labels[samp[4]])
+def knn_classifier(k,test_sample):
+    #calculating all distances
+    ls=[]
+    for i in range(len(x_train)):
+        sample=x_train[i]
+        label=y_train[i]
+        d=cos_distance(test_sample,sample)
+        ls.append((sample,label,d))
+    ls.sort(key=lambda x:x[2])
+    cnt=[0]*3
+    #count labels of k nearest neighbors
+    for i in range(k):
+        cnt[ls[i][1]]+=1
+    #assign test sample to the majority class
+    m=max(cnt)
+    if cnt[0]==m:
+        return 0
+    elif cnt[1]==m:
+        return 1
+    elif cnt[2]==m:
+        return 2
+
+#answer of question (b.ii)
+x_dev=[]
+y_dev=[]
+with open('iris_dev.csv') as csvfile:
+    datareader = csv.reader(csvfile)
+    for samp in datareader:
+        if '_' in samp[0]:
+            continue
+        sample=[]
+        for i in range(4):
+            sample.append(float(samp[i]))
+        x_dev.append(sample)
+        y_dev.append(labels[samp[4]])
+ks=range(1,21,2)
+accs=[]
+maxAcc=0
+maxk=0
+#explore different values of k to find the optimal k that has the hightest dev accuracy
+for k in ks:
+    cnt=0
+    for i in range(len(x_dev)):
+        sample=x_dev[i]
+        label=y_dev[i]
+        if knn_classifier(k,sample)==label:
+            cnt+=1
+    acc=cnt/len(x_dev)
+    if acc>maxAcc:
+        maxAcc=acc
+        maxk=k
+    accs.append(acc)
+print('best k is {}, dev acc is {}'.format(maxk,maxAcc))
+plt.plot(ks,accs)
+plt.xlabel('k')
+plt.ylabel('accs')
+plt.ylim(0,1)
+plt.xticks(ks, ks)
+plt.show()
+
+#answer of question (b.iii)
+x_test=[]
+y_test=[]
+with open('iris_test.csv') as csvfile:
+    datareader = csv.reader(csvfile)
+    for samp in datareader:
+        if '_' in samp[0]:
+            continue
+        sample=[]
+        for i in range(4):
+            sample.append(float(samp[i]))
+        x_test.append(sample)
+        y_test.append(labels[samp[4]])
+#calculate acc in test set using optimal k
+cnt=0
+for i in range(len(x_test)):
+    sample=x_test[i]
+    label=y_test[i]
+    if knn_classifier(maxk,sample)==label:
+        cnt+=1
+test_acc=cnt/len(x_test)
+print('test acc is {}'.format(test_acc))
